@@ -1,0 +1,129 @@
+### CloudFormation Script (cloudformation-template.yaml)
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template for a serverless web application
+
+Resources:
+  # DynamoDB Table
+  DataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RealTimeData
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  # S3 Bucket for Static Hosting
+  StaticSiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-static-site"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  # Lambda Execution Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt DataTable.Arn
+
+  # Lambda Function
+  DataProcessingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DataProcessingFunction
+      Runtime: nodejs14.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.handler
+      Code:
+        S3Bucket: your-lambda-code-bucket
+        S3Key: data-processing-function.zip
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DataTable
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: RealTimeDataAPI
+
+  ApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: data
+      RestApiId: !Ref ApiGateway
+
+  ApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGateway
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt DataProcessingFunction.Arn
+
+  # Cognito User Pool
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: RealTimeDataUserPool
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: RealTimeDataClient
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Export:
+      Name: ApiEndpoint
+
+  S3BucketURL:
+    Description: "S3 Bucket URL for static site"
+    Value: !GetAtt StaticSiteBucket.WebsiteURL
+    Export:
+      Name: S3BucketURL
