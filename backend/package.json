@@ -1,0 +1,20 @@
+{
+  "name": "real-time-data-processing-backend",
+  "version": "1.0.0",
+  "description": "Backend Lambda function for processing real-time data and storing it in DynamoDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node index.js",
+    "deploy": "zip -r function.zip . && aws lambda update-function-code --function-name DataProcessingFunction --zip-file fileb://function.zip"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1152.0",
+    "axios": "^0.27.2"
+  },
+  "devDependencies": {
+    "jest": "^29.0.1"
+  },
+  "author": "Amr Reda",
+  "license": "MIT"
+}
