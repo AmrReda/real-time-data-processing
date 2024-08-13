@@ -37,3 +37,48 @@ The application uses the following AWS services:
 git clone https://github.com/yourusername/real-time-data-processing.git
 cd real-time-data-processing
 ```
+
+### 2. Deploy CloudFormation Stack
+
+Deploy the AWS resources using the provided CloudFormation template:
+
+```bash
+aws cloudformation create-stack --stack-name RealTimeDataProcessing --template-body file://cloudformation-template.yaml
+```
+
+### 3. Set Up the Frontend
+
+Navigate to the frontend directory and install dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+### 4. Deploy the Frontend
+
+Use AWS Amplify to deploy the frontend:
+
+```bash
+amplify init
+amplify add hosting
+amplify publish
+```
+
+### 5. Configure Cognito
+
+Set up an Amazon Cognito User Pool and integrate it with your front-end application by updating the configuration file.
+
+## Usage
+
+- Access the application through the Amplify-hosted URL.
+- Sign up or log in using Cognito authentication.
+- View real-time data updates on the dashboard.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](Licencse.md) file for details.
