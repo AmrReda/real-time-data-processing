@@ -13,7 +13,7 @@ The application uses the following AWS services:
 - **AWS Amplify**: To manage front-end deployment.
 - **Amazon Cognito**: For user authentication.
 
-![Architecture Diagram](architecture-diagram.png)
+![Architecture Diagram](docs/architecture-diagram.png)
 
 ## Features
 
